@@ -14,6 +14,7 @@
       font-family: "Poppins", sans-serif;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
+      touch-action: manipulation;
     }
 
     /* الخلفية الضبابية (تثبيت لتجنب إعادة التخطيط) */
@@ -95,6 +96,7 @@
       -webkit-backdrop-filter: blur(4px);
       font-size: 18px;
       transition: transform 0.2s ease, background 0.2s ease;
+      z-index: 3;
     }
 
     .sound-control:hover {
@@ -105,6 +107,9 @@
     .actions {
       margin-top: 6px;
       margin-bottom: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
     }
 
     button {
@@ -118,10 +123,50 @@
       transition: transform .16s ease, background .16s ease;
       backdrop-filter: blur(6px);
       -webkit-backdrop-filter: blur(6px);
+      -webkit-tap-highlight-color: transparent;
     }
 
     button:active { transform: scale(0.98); }
     button:hover { transform: scale(1.04); }
+
+    /* شاشة البداية للتفاعل */
+    .start-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.8);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      backdrop-filter: blur(10px);
+    }
+
+    .start-screen h2 {
+      color: white;
+      font-size: 1.5rem;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .start-button {
+      background: rgba(255,255,255,0.2);
+      color: white;
+      border: 2px solid rgba(255,255,255,0.3);
+      padding: 15px 30px;
+      border-radius: 30px;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .start-button:active {
+      background: rgba(255,255,255,0.3);
+      transform: scale(0.95);
+    }
 
     /* تأثير الاهتزاز */
     @keyframes shake {
@@ -146,8 +191,14 @@
   </style>
 </head>
 <body>
+  <!-- شاشة البداية -->
+  <div class="start-screen" id="startScreen">
+    <h2>☾ Hands Apart, Memories Close ☽</h2>
+    <button class="start-button" id="startButton">▶️ Start Experience</button>
+  </div>
+
   <!-- الخلفية الضبابية -->
-  <video class="bg" src="video.mp4" autoplay loop playsinline></video>
+  <video class="bg" src="video.mp4" loop playsinline preload="auto"></video>
 
   <!-- الحاوية المحتوية على النص والفيديو الرئيسي -->
   <div class="container">
@@ -155,7 +206,7 @@
     <div class="desc">"A heart offered, a distance kept…yet the bond whispers."</div>
 
     <div class="video-container">
-      <video class="main-video" src="video.mp4" autoplay loop playsinline></video>
+      <video class="main-video" src="video.mp4" loop playsinline preload="auto"></video>
       <button class="sound-control" id="soundToggle">🔇</button>
     </div>
 
@@ -165,17 +216,51 @@
   </div>
 
   <script>
-    // عناصر الفيديو
+    // عناصر DOM
+    const startScreen = document.getElementById('startScreen');
+    const startButton = document.getElementById('startButton');
     const mainVideo = document.querySelector('.main-video');
     const bgVideo = document.querySelector('.bg');
     const soundToggle = document.getElementById('soundToggle');
+    const likeButton = document.getElementById('likeButton');
     
     // حالة الصوت
     let isMuted = true;
+    let audioContext = null;
     
-    // تهيئة الفيديو بدون صوت في البداية (متطلبات المتصفح)
-    mainVideo.volume = 0;
-    bgVideo.volume = 0;
+    // تهيئة الفيديو بدون صوت في البداية
+    function initializeVideos() {
+      mainVideo.volume = 0;
+      bgVideo.volume = 0;
+      mainVideo.playsInline = true;
+      bgVideo.playsInline = true;
+      mainVideo.setAttribute('webkit-playsinline', '');
+      bgVideo.setAttribute('webkit-playsinline', '');
+    }
+    
+    // بدء التجربة
+    startButton.addEventListener('click', async function() {
+      try {
+        // إخفاء شاشة البداية
+        startScreen.style.display = 'none';
+        
+        // تشغيل الفيديو
+        await mainVideo.play();
+        await bgVideo.play();
+        
+        // تهيئة AudioContext بعد التفاعل الأول
+        if (!audioContext) {
+          audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        
+        console.log('الفيديو يعمل بنجاح');
+      } catch (error) {
+        console.error('خطأ في تشغيل الفيديو:', error);
+        // محاولة بديلة
+        mainVideo.play().catch(e => console.log('لا يمكن تشغيل الفيديو تلقائياً'));
+        bgVideo.play().catch(e => console.log('لا يمكن تشغيل الفيديو تلقائياً'));
+      }
+    });
     
     // زر التحكم بالصوت
     soundToggle.addEventListener('click', function() {
@@ -186,24 +271,22 @@
         bgVideo.volume = 0;
         this.innerHTML = '🔇';
       } else {
-        mainVideo.volume = 0.7; // مستوى صوت معتدل
+        mainVideo.volume = 0.7;
         bgVideo.volume = 0.7;
         this.innerHTML = '🔊';
+        
+        // إعادة تشغيل الفيديو لتفعيل الصوت (للسافاري)
+        mainVideo.play().catch(e => console.log('لا يمكن تشغيل الصوت'));
+        bgVideo.play().catch(e => console.log('لا يمكن تشغيل الصوت'));
       }
     });
     
-    // محاولة تشغيل الصوت عند التفاعل مع الصفحة (متطلبات المتصفح)
-    document.body.addEventListener('click', function() {
-      if (mainVideo.volume === 0 && !isMuted) {
-        // إعادة تشغيل الفيديو لتفعيل الصوت
-        mainVideo.play();
-        bgVideo.play();
-      }
-    }, { once: true }); // مرة واحدة فقط
-
     // إنشاء صوت حجارة واقعي
     function createStoneSound() {
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      
       const duration = 0.8;
       
       // إنشاء ضوضاء بنية
@@ -218,16 +301,16 @@
       const noise = audioContext.createBufferSource();
       noise.buffer = buffer;
       
-      // مرشح تمرير نطاقي لجعل الصوت مشابهاً للحجارة
+      // مرشح تمرير نطاقي
       const bandpass = audioContext.createBiquadFilter();
       bandpass.type = 'bandpass';
-      bandpass.frequency.value = 600;
-      bandpass.Q.value = 1.0;
+      bandpass.frequency.value = 800;
+      bandpass.Q.value = 0.8;
       
-      // تضمين السعة لمحاكاة صوت الاصطدام
+      // تضمين السعة
       const gainNode = audioContext.createGain();
       gainNode.gain.setValueAtTime(0, audioContext.currentTime);
-      gainNode.gain.linearRampToValueAtTime(0.4, audioContext.currentTime + 0.05);
+      gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.05);
       gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
       
       // توصيل العقد
@@ -241,7 +324,7 @@
     }
 
     // إضافة حدث النقر على زر الإعجاب
-    document.getElementById('likeButton').addEventListener('click', function() {
+    likeButton.addEventListener('click', function() {
       // إضافة تأثير الاهتزاز
       this.classList.add('shake');
       
@@ -253,6 +336,38 @@
         this.classList.remove('shake');
       }, 300);
     });
+    
+    // تهيئة الفيديو عند تحميل الصفحة
+    window.addEventListener('load', initializeVideos);
+    
+    // معالجة إيقاف الصفحة (لأجهزة iOS)
+    document.addEventListener('visibilitychange', function() {
+      if (document.hidden) {
+        // الصفحة غير مرئية - إيقاف الفيديو
+        mainVideo.pause();
+        bgVideo.pause();
+      } else {
+        // الصفحة مرئية - إعادة التشغيل
+        if (startScreen.style.display === 'none') {
+          mainVideo.play().catch(e => console.log('لا يمكن إعادة التشغيل'));
+          bgVideo.play().catch(e => console.log('لا يمكن إعادة التشغيل'));
+        }
+      }
+    });
+    
+    // معالجة إيقاف الشاشة (لأجهزة iOS)
+    document.addEventListener('webkitvisibilitychange', function() {
+      if (document.webkitHidden) {
+        mainVideo.pause();
+        bgVideo.pause();
+      } else {
+        if (startScreen.style.display === 'none') {
+          mainVideo.play().catch(e => console.log('لا يمكن إعادة التشغيل'));
+          bgVideo.play().catch(e => console.log('لا يمكن إعادة التشغيل'));
+        }
+      }
+    });
+
   </script>
 </body>
 </html>
