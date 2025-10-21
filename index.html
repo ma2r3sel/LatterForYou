@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta property="og:title" content="☾ Hands Apart, Memories Close ☽" />
+  <meta property="og:description" content="A heart offered, a distance kept…yet the bond whispers." />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>☾ Hands Apart, Memories Close ☽</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%;
+      background: #000;
+      font-family: "Poppins", sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* الخلفية الضبابية (تثبيت لتجنب إعادة التخطيط) */
+    .bg {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
+      filter: blur(22px) brightness(0.34);
+      z-index: 0;
+      transform: scale(1.06);
+      pointer-events: none; /* لكي لا تتداخل مع اللمس */
+    }
+
+    /* الحاوية الرئيسية للمحتوى */
+    .container {
+      position: relative;
+      z-index: 2;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      /* مساحات أمان للأجهزة الحديثة (notch / home indicator) */
+      padding: calc(env(safe-area-inset-top, 20px) + 18px) 18px calc(env(safe-area-inset-bottom, 20px) + 18px);
+      overflow: auto; /* يسمح بالتمرير إذا كان المحتوى أطول من الشاشة */
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      margin-bottom: 6px;
+      letter-spacing: 1px;
+      color: #fff;
+      text-shadow: 0 0 8px rgba(0,0,0,0.6);
+      line-height: 1.1;
+    }
+
+    .desc {
+      font-size: 0.88rem;
+      color: #e6e6e6;
+      margin-bottom: 12px;
+      font-style: italic;
+      text-shadow: 0 0 6px rgba(0,0,0,0.6);
+      max-width: 92%;
+    }
+
+    .video-container {
+      position: relative;
+      width: 100%;
+      max-width: 420px;
+      margin: 12px 0 18px 0;
+    }
+
+    .main-video {
+      width: 100%;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+      /* ضبط أقصى ارتفاع حتى لا يطرد المحتوى خارج الشاشة */
+      max-height: 70vh;
+      object-fit: cover;
+    }
+
+    .sound-control {
+      position: absolute;
+      bottom: 15px;
+      right: 15px;
+      background: rgba(0,0,0,0.6);
+      border: none;
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      color: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      font-size: 18px;
+      transition: transform 0.2s ease, background 0.2s ease;
+    }
+
+    .sound-control:hover {
+      transform: scale(1.1);
+      background: rgba(0,0,0,0.8);
+    }
+
+    .actions {
+      margin-top: 6px;
+      margin-bottom: 6px;
+    }
+
+    button {
+      background: rgba(255,255,255,0.08);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.18);
+      padding: 10px 20px;
+      border-radius: 26px;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: transform .16s ease, background .16s ease;
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+    }
+
+    button:active { transform: scale(0.98); }
+    button:hover { transform: scale(1.04); }
+
+    /* تأثير الاهتزاز */
+    @keyframes shake {
+      0% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      50% { transform: translateX(5px); }
+      75% { transform: translateX(-5px); }
+      100% { transform: translateX(0); }
+    }
+
+    .shake {
+      animation: shake 0.3s ease-in-out;
+    }
+
+    /* ضمان أن النصوص والأزرار لا تلتصق بالحافة على شاشات صغيرة */
+    @media (max-height: 640px) {
+      h1 { font-size: 1.2rem; }
+      .desc { font-size: 0.82rem; }
+      .video-container { max-width: 360px; }
+    }
+
+  </style>
+</head>
+<body>
+  <!-- الخلفية الضبابية -->
+  <video class="bg" src="video.mp4" autoplay loop playsinline></video>
+
+  <!-- الحاوية المحتوية على النص والفيديو الرئيسي -->
+  <div class="container">
+    <h1>☾ Hands Apart, Memories Close ☽</h1>
+    <div class="desc">"A heart offered, a distance kept…yet the bond whispers."</div>
+
+    <div class="video-container">
+      <video class="main-video" src="video.mp4" autoplay loop playsinline></video>
+      <button class="sound-control" id="soundToggle">🔇</button>
+    </div>
+
+    <div class="actions">
+      <button id="likeButton">❤️ Like</button>
+    </div>
+  </div>
+
+  <script>
+    // عناصر الفيديو
+    const mainVideo = document.querySelector('.main-video');
+    const bgVideo = document.querySelector('.bg');
+    const soundToggle = document.getElementById('soundToggle');
+    
+    // حالة الصوت
+    let isMuted = true;
+    
+    // تهيئة الفيديو بدون صوت في البداية (متطلبات المتصفح)
+    mainVideo.volume = 0;
+    bgVideo.volume = 0;
+    
+    // زر التحكم بالصوت
+    soundToggle.addEventListener('click', function() {
+      isMuted = !isMuted;
+      
+      if (isMuted) {
+        mainVideo.volume = 0;
+        bgVideo.volume = 0;
+        this.innerHTML = '🔇';
+      } else {
+        mainVideo.volume = 0.7; // مستوى صوت معتدل
+        bgVideo.volume = 0.7;
+        this.innerHTML = '🔊';
+      }
+    });
+    
+    // محاولة تشغيل الصوت عند التفاعل مع الصفحة (متطلبات المتصفح)
+    document.body.addEventListener('click', function() {
+      if (mainVideo.volume === 0 && !isMuted) {
+        // إعادة تشغيل الفيديو لتفعيل الصوت
+        mainVideo.play();
+        bgVideo.play();
+      }
+    }, { once: true }); // مرة واحدة فقط
+
+    // إنشاء صوت حجارة واقعي
+    function createStoneSound() {
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const duration = 0.8;
+      
+      // إنشاء ضوضاء بنية
+      const bufferSize = audioContext.sampleRate * duration;
+      const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+      const data = buffer.getChannelData(0);
+      
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = Math.random() * 2 - 1;
+      }
+      
+      const noise = audioContext.createBufferSource();
+      noise.buffer = buffer;
+      
+      // مرشح تمرير نطاقي لجعل الصوت مشابهاً للحجارة
+      const bandpass = audioContext.createBiquadFilter();
+      bandpass.type = 'bandpass';
+      bandpass.frequency.value = 600;
+      bandpass.Q.value = 1.0;
+      
+      // تضمين السعة لمحاكاة صوت الاصطدام
+      const gainNode = audioContext.createGain();
+      gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+      gainNode.gain.linearRampToValueAtTime(0.4, audioContext.currentTime + 0.05);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+      
+      // توصيل العقد
+      noise.connect(bandpass);
+      bandpass.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      // تشغيل الصوت
+      noise.start();
+      noise.stop(audioContext.currentTime + duration);
+    }
+
+    // إضافة حدث النقر على زر الإعجاب
+    document.getElementById('likeButton').addEventListener('click', function() {
+      // إضافة تأثير الاهتزاز
+      this.classList.add('shake');
+      
+      // تشغيل صوت الحجارة
+      createStoneSound();
+      
+      // إزالة تأثير الاهتزاز بعد انتهاءه
+      setTimeout(() => {
+        this.classList.remove('shake');
+      }, 300);
+    });
+  </script>
+</body>
+</html>
